@@ -39,7 +39,6 @@ def load_leadtime_data(material_id):
     
 # Function to load stock data from CSV
 @st.cache_data
-@st.cache_data
 def load_stock_value(filepath):
     try:
         # Try reading the CSV with different encodings if needed
@@ -65,3 +64,15 @@ def load_stock_value(filepath):
     except Exception as e:
         st.error(f"Error loading {filepath}: {str(e)}")
         return None, None
+    
+# Function to load reliability factor from different CSV
+@st.cache_data
+def load_reliability_data(material_id):
+    try:
+        reliability_data = pd.read_csv("files/reliability.csv")  # Replace with your actual filename
+        if 'Material No' in reliability_data.columns:
+            reliability_data['Material No'] = reliability_data['Material No'].astype(str)
+        return reliability_data[reliability_data['Material No'] == material_id]
+    except Exception as e:
+        st.warning(f"Could not load leadtime details for material {material_id}: {e}")
+        return None

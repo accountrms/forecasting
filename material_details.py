@@ -4,8 +4,9 @@ import numpy as np
 import plotly.express as px
 import plotly.graph_objects as go
 import matplotlib.pyplot as plt
-from data import load_additional_data, load_leadtime_data
+from data import load_additional_data, load_leadtime_data, load_reliability_data
 from datetime import date, timedelta, datetime
+import csv
 
 # Function to display material details with the new requirements
 def show_material_details(material_id, main_data):
@@ -24,7 +25,7 @@ def show_material_details(material_id, main_data):
     st.divider()
     
     # Display additional data
-    st.subheader("Forecast Data (in days)")
+    st.subheader("Inventory Forecast Dashboard")
     additional_data = load_additional_data(material_id)
     leadtime_data = load_leadtime_data(material_id)
     
@@ -42,37 +43,31 @@ def show_material_details(material_id, main_data):
         col3.metric("Logistics Delay", grgi_forecasted)
         col4.metric("Total Leadtime", total_leadtime)
         
-        st.divider()
-        
         # Prepare data for plotting
         additional_data['year'] = additional_data['year'].astype(int)
         additional_data = additional_data.sort_values('year')
 
         additional_data=additional_data[['year','cons_wip', 'buffer_stock','net_req','present_stock']]
-        # Create the plot
-        st.subheader("Inventory Trends Over Time (Plotly Express)")
 
-        # To plot multiple lines easily with Plotly Express, it's often best to "melt" your DataFrame
-        # into a "long" format. This stacks your 'cons_wip', 'buffer_stock', etc., into a single 'Quantity' column
-        # with a new 'Metric' column to distinguish them.
-        df_long = additional_data.melt(id_vars=['year'],
-                                       var_name='Metric',
-                                       value_name='Quantity')
+        # # Create the plot
+        # st.subheader("Inventory Trends Over Time")
+        # df_long = additional_data.melt(id_vars=['year'],
+        #                                var_name='Metric',
+        #                                value_name='Quantity')
 
-        fig = px.line(df_long,
-                      x='year',
-                      y='Quantity',
-                      color='Metric',  # This tells Plotly to draw a separate line for each 'Metric'
-                      markers=True,  # Show markers at each data point
-                      labels={'year': 'Year', 'Quantity': 'Quantity'})  # Customize axis labels
+        # fig = px.line(df_long,
+        #               x='year',
+        #               y='Quantity',
+        #               color='Metric',  # This tells Plotly to draw a separate line for each 'Metric'
+        #               markers=True,  # Show markers at each data point
+        #               labels={'year': 'Year', 'Quantity': 'Quantity'})  # Customize axis labels
 
-        # Enhance interactivity with hover templates or unified hovers
-        fig.update_layout(hovermode="x unified")  # Shows all series values when hovering over a specific year
+        # fig.update_layout(hovermode="x unified")  # Shows all series values when hovering over a specific year
 
-        # Display the plot
-        st.plotly_chart(fig, use_container_width=True)  # use_container_width makes it fill the Streamlit column
+        # # Display the plot
+        # st.plotly_chart(fig, use_container_width=True)  # use_container_width makes it fill the Streamlit column
 
-        st.divider()
+        # st.divider()
 
         # Load data
         @st.cache_data
@@ -133,13 +128,9 @@ def show_material_details(material_id, main_data):
                 'leadtime':leadtime
             }
 
-        st.subheader("Inventory Forecast Dashboard")
 
         # User inputs
-        # oem = st.text_input("OEM", "atlas")
-        # initial_stock = st.number_input("Initial Stock", value=10)
         oem = "atlas"
-        initial_stock = 10
 
         # Run forecast
         try:
@@ -148,14 +139,16 @@ def show_material_details(material_id, main_data):
             df, ordering_required[material_id] = makedaywiseForecast(forecasted, material_id, 'atlas')
             leadtime = ordering_required[material_id]['leadtime']
             reorder_point = ordering_required[material_id]['reorder_point']
-            delivery_date = reorder_point + pd.DateOffset(days=leadtime)  # Proper date addition
+            delivery_date = reorder_point + pd.DateOffset(days=leadtime)
+            present_stock = additional_data['present_stock'].iloc[0]
+            safety_stock = additional_data['buffer_stock'].iloc[0]
             
             col1, col2, col3, col4, col5 = st.columns(5)
-            col1.metric("Reorder Point", reorder_point.strftime('%Y-%m-%d'))
+            col1.metric("Reorder Point", reorder_point.strftime('%d/%m/%y'))
             col2.metric("Reorder Quantity", ordering_required[material_id]['reorder_qty'])
-            col3.metric("Delivery Date", delivery_date.strftime('%Y-%m-%d'))
-            col4.metric("Present Stock", additional_data['present_stock'].iloc[0])
-            col5.metric("Safety Stock", additional_data['buffer_stock'].iloc[0])
+            col3.metric("Delivery Date", delivery_date.strftime('%d/%m/%y'))
+            col4.metric("Present Stock", present_stock)
+            col5.metric("Safety Stock", safety_stock)
 
             # Plot
             df['date'] = pd.to_datetime(df['date'])
@@ -208,10 +201,33 @@ def show_material_details(material_id, main_data):
             st.error(f"An error occurred: {str(e)}")
 
         st.divider()
-        
-        # Show raw data in an expandable section
-        with st.expander("View Raw Data"):
-            st.dataframe(df, hide_index=True)
+
+        # Calculating Reliabilty woth Population Input
+        reliability_data = load_reliability_data(material_id) 
+        st.subheader("Reliability Dashboard")
+        population = st.number_input("Total Population (N)")
+        reliability_factor = reliability_data["Reliability_365days"].iloc[0]
+        reliability_forcasted_qty = round((1-reliability_factor)*population, 2)
+        col1, col2 = st.columns(2)
+        col1.metric("Reliability Factor (RF)", round(reliability_factor,4))
+        col2.metric("Reliability Forecasted Quantity ((1-RF)*N)",reliability_forcasted_qty)
+
+
+        st.divider()
+
+        present_stock_sim = st.number_input("Present Stock")
+        if present_stock_sim < safety_stock:
+            st.write("User Notified. Check Notification for further action.")
+
+            filename = "files/notification.csv"
+            current_date = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            data = [current_date, material_id, present_stock, safety_stock]
+            
+            with open(filename, 'a', newline='') as file:
+                writer = csv.writer(file)
+                if file.tell() == 0:
+                    writer.writerow(['Date', 'Material ID', 'Present Stock', 'Safety Stock'])
+                writer.writerow(data)
             
     else:
         st.warning("No additional forecast data available for this material")
