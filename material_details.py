@@ -1,11 +1,10 @@
 import streamlit as st
 import pandas as pd
+import numpy as np
 import plotly.express as px
+import plotly.graph_objects as go
 import matplotlib.pyplot as plt
-from data import load_main_data
-from data import load_additional_data
-from data import load_leadtime_data
-
+from data import load_additional_data, load_leadtime_data
 from datetime import date, timedelta, datetime
 
 # Function to display material details with the new requirements
@@ -83,73 +82,56 @@ def show_material_details(material_id, main_data):
         forecasted = load_data()
         forecasted['Material No'] = forecasted['Material No'].astype(str)
 
-        def makedaywiseForecast(df_yearly, mat, oem, end_date=date.today()+timedelta(days=365*5), initial_stock=10):
+        def makedaywiseForecast(df_yearly,mat,oem,end_date=date.today()+timedelta(days=365*5),initial_stock=10):
             daywiseForecast = pd.DataFrame(columns=['Material No','Desc','leadtime','date','daily_cons','anticipated_consum','buffer_stock','present_stock','stock_after'])
-            df = df_yearly.copy()
-            df = df[(df['Material No']==mat) & (df['oem']==oem)].reset_index(drop=True)
-            
+            df=df_yearly.copy()
+            df=df[(df['Material No']==mat)&(df['oem']==oem)].reset_index(drop=True)
+            consider_pre_order = False
             start_date = date.today()
             days = (end_date-start_date).days
+            initial_stock = df.at[0,'cons_wip']*2
             daywiseForecast.at[0,'present_stock'] = initial_stock if df.at[0,'buffer_stock'] < initial_stock else df.at[0,'buffer_stock']*1.2
-            daywiseForecast.at[0,'stock_after'] = daywiseForecast.at[0,'present_stock']
-            
-            reorder_point = 0
-            reorder_qty = 0
-            first_reorder = False
-            leadtime = int(df['leadtime'].iloc[0])  # Convert to Python int
-            arrival = {}
-            
+            daywiseForecast.at[0,'stock_after']=daywiseForecast.at[0,'present_stock']
+            reorder_point=end_date+timedelta(days=2)
+            reorder_qty,updated_reorder_qty=0,0
+            first_reorder=False
+            leadtime = df['leadtime'].iloc[0]
+            arrival={}
             for i in range(days):
-                daywiseForecast.at[i,'date'] = start_date + timedelta(days=i)
-                daywiseForecast.at[i,'anticipated_consum'] = df.loc[df['year']==date.today().year,'cons_woip'].iloc[0]*leadtime/365
-                daywiseForecast.at[i,'buffer_stock'] = df.loc[df['year']==date.today().year,'buffer_stock'].iloc[0]
-                daywiseForecast.at[i,'daily_cons'] = df.loc[df['year']==date.today().year,'cons_wip'].iloc[0]/365
-                
-                if i > 0:
+                daywiseForecast.at[i,'date']=start_date+timedelta(days=i)
+                daywiseForecast.at[i,'anticipated_consum']=df.loc[df['year']==date.today().year,'cons_woip'].iloc[0]*leadtime/365
+                daywiseForecast.at[i,'buffer_stock']=df.loc[df['year']==date.today().year,'buffer_stock'].iloc[0]
+                daywiseForecast.at[i,'daily_cons']=df.loc[df['year']==date.today().year,'cons_wip'].iloc[0]/365
+                if i>0:
                     if i in arrival.keys():
                         arrived_qty = arrival[i]
                     else:
-                        arrived_qty = 0
-                        
-                    daywiseForecast.at[i,'present_stock'] = max(daywiseForecast.at[i-1,'present_stock'] - daywiseForecast.at[i-1,'daily_cons'], 0)
-                    daywiseForecast.at[i,'stock_after'] = max(daywiseForecast.at[i-1,'stock_after'] - daywiseForecast.at[i-1,'daily_cons'], 0) + arrived_qty
-                    
+                        arrived_qty=0
+                    daywiseForecast.at[i,'present_stock']=max(daywiseForecast.at[i-1,'present_stock']-daywiseForecast.at[i-1,'daily_cons'],0)
+                    daywiseForecast.at[i,'stock_after']=max(daywiseForecast.at[i-1,'stock_after']-daywiseForecast.at[i-1,'daily_cons'],0)+arrived_qty
                     if not first_reorder:
-                        if daywiseForecast.at[i,'present_stock'] < daywiseForecast.at[i,'buffer_stock']:
+                        if daywiseForecast.at[i,'present_stock']< daywiseForecast.at[i,'buffer_stock']:
                             reorder_point = daywiseForecast.at[i,'date']
                             first_reorder = True
-                            current_year = daywiseForecast.at[i,'date'].year
-                            reorder_qty = df.loc[df['year']==date.today().year,'cons_wip'].iloc[0] + daywiseForecast.at[i,'anticipated_consum'] + daywiseForecast.at[i,'buffer_stock'] - daywiseForecast.at[i, 'present_stock']
-                            arrival[i+leadtime] = reorder_qty
-            
-            daywiseForecast['Material No'] = mat
-            daywiseForecast['Desc'] = df.at[0,'Desc']
-            daywiseForecast['leadtime'] = leadtime
-            
-            return daywiseForecast, reorder_point, reorder_qty, leadtime
-
-        def plot_req2(dff, tagw, mat, ro_p, leadtime):
-            result = dff.copy()
-            fig, ax = plt.subplots(figsize=(12, 4))
-            
-            for t in tagw:
-                t1 = result[t].to_list()
-                y1 = result['date'].to_list()
-                ax.plot(y1, t1, label=t, marker='o', linestyle='-')
-            
-            ax.axvline(x=ro_p, color='red', linestyle='--', label=f"reorder point at {ro_p.strftime('%d-%m-%Y')}")
-            ax.axvline(x=ro_p+timedelta(days=int(leadtime)), color='red', linestyle='--', label=f"delivery point at {(ro_p+timedelta(days=int(leadtime))).strftime('%d-%m-%Y')}")
-            ax.hlines(50, ro_p, ro_p+timedelta(days=int(leadtime)), colors='k', linestyles='--', label='leadtime')
-            
-            ax.set_xticks(y1)
-            ax.set_xticklabels([d.strftime('%Y-%m-%d') for d in y1], rotation=45)
-            ax.xaxis.set_major_locator(plt.MaxNLocator(integer=True))
-            ax.legend()
-            ax.set_title(f"Forecast - {mat}")
-            plt.tight_layout()
-            
-            return fig
-
+                            current_year=daywiseForecast.at[i,'date'].year
+                            reorder_qty = df.loc[df['year']==date.today().year,'cons_wip'].iloc[0] + daywiseForecast.at[i,'anticipated_consum'] +  daywiseForecast.at[i,'buffer_stock'] - daywiseForecast.at[i, 'present_stock']
+                            arrival[i+leadtime]=reorder_qty
+            daywiseForecast['Material No']=mat
+            daywiseForecast['Desc']=df.at[0,'Desc']
+            daywiseForecast['leadtime']=df['leadtime'].iloc[0]
+            date_for_stock_check = reorder_point+timedelta(days=(365+int(leadtime)))
+            if date_for_stock_check < end_date:
+                if daywiseForecast[daywiseForecast['date']==date_for_stock_check]['present_stock'].iloc[0] == 0:
+                    consider_pre_order = True
+                    updated_period = daywiseForecast[daywiseForecast['date'].between(date.today(),reorder_point)]
+                    updated_reorder_qty = reorder_qty - updated_period['daily_cons'].values.sum()
+            return daywiseForecast.reset_index(drop=True),{
+                'reorder_point':reorder_point,
+                'reorder_qty': np.ceil(reorder_qty),
+                'updated_reorder_qty':np.ceil(updated_reorder_qty),
+                'consider_pre_order':consider_pre_order,
+                'leadtime':leadtime
+            }
 
         st.subheader("Inventory Forecast Dashboard")
 
@@ -161,17 +143,67 @@ def show_material_details(material_id, main_data):
 
         # Run forecast
         try:
-            df, reorder_point, reorder_qty, leadtime = makedaywiseForecast(forecasted, material_id, oem, initial_stock=initial_stock)
+            ordering_required = {}
+            ordering_required[material_id]={}
+            df, ordering_required[material_id] = makedaywiseForecast(forecasted, material_id, 'atlas')
+            leadtime = ordering_required[material_id]['leadtime']
+            reorder_point = ordering_required[material_id]['reorder_point']
+            delivery_date = reorder_point + pd.DateOffset(days=leadtime)  # Proper date addition
             
-            col1, col2, col3, col4 = st.columns(4)
+            col1, col2, col3, col4, col5 = st.columns(5)
             col1.metric("Reorder Point", reorder_point.strftime('%Y-%m-%d'))
-            col2.metric("Reorder Quantity", round(reorder_qty, 1))
-            col3.metric("Lead Time", f"{leadtime} days")
-            
+            col2.metric("Reorder Quantity", ordering_required[material_id]['reorder_qty'])
+            col3.metric("Delivery Date", delivery_date.strftime('%Y-%m-%d'))
+            col4.metric("Present Stock", additional_data['present_stock'].iloc[0])
+            col5.metric("Safety Stock", additional_data['buffer_stock'].iloc[0])
+
             # Plot
-            fig = plot_req2(df, ['buffer_stock', 'stock_after', 'present_stock'], material_id, reorder_point, leadtime)
-            st.pyplot(fig)
-            
+            df['date'] = pd.to_datetime(df['date'])
+            fig = go.Figure()
+            fig.add_trace(go.Scatter(
+                x=df['date'],
+                y=df['buffer_stock'],
+                mode='lines',
+                name='Buffer Stock',
+                line=dict(color='red', dash='dash'),
+                hoverinfo='y+name'
+            ))
+
+            # Present stock (only before delivery)
+            present_before_delivery = df[df['date'] < delivery_date]
+            fig.add_trace(go.Scatter(
+                x=present_before_delivery['date'],
+                y=present_before_delivery['present_stock'],
+                mode='lines',
+                name='Present Stock',
+                line=dict(color='orange'),
+                hoverinfo='y+name'
+            ))
+
+            # Stock after replenishment
+            stock_after = df[df['date'] >= delivery_date]
+            fig.add_trace(go.Scatter(
+                x=stock_after['date'],
+                y=stock_after['stock_after'],
+                mode='lines',
+                name='Stock After Replenishment',
+                line=dict(color='green'),
+                hoverinfo='y+name'
+            ))
+
+            # Customize layout
+            fig.update_layout(
+                title="Inventory Level",
+                xaxis_title="Date",
+                yaxis_title="Stock Level",
+                hovermode="x unified",
+                height=600,
+                showlegend=True
+            )
+
+            # Display the plot
+            st.plotly_chart(fig, use_container_width=True)
+
         except Exception as e:
             st.error(f"An error occurred: {str(e)}")
 
@@ -179,10 +211,7 @@ def show_material_details(material_id, main_data):
         
         # Show raw data in an expandable section
         with st.expander("View Raw Data"):
-            st.dataframe(additional_data, hide_index=True)
-
-        with st.expander("View Leadtime Data"):
-            st.dataframe(leadtime_data, hide_index=True)
+            st.dataframe(df, hide_index=True)
             
     else:
         st.warning("No additional forecast data available for this material")

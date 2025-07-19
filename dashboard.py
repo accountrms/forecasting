@@ -51,8 +51,10 @@ def dashboard_page():
 
             # Display the trend metric
             st.metric(
-                label="2024 → 2025",
+                label="",
                 value=f"{percentage_increase:.1f}% increase",
+                delta="2024 → 2025",
+                delta_color="inverse"
             )
 
         # Create plot
