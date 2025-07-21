@@ -4,8 +4,8 @@ import numpy as np
 import plotly.express as px
 import plotly.graph_objects as go
 import matplotlib.pyplot as plt
-from data import load_additional_data, load_leadtime_data, load_reliability_data
-from datetime import date, timedelta, datetime
+from data import load_additional_data, load_leadtime_data, load_reliability_data, makedaywiseForecast
+from datetime import datetime
 import csv
 
 # Function to display material details with the new requirements
@@ -76,58 +76,6 @@ def show_material_details(material_id, main_data):
 
         forecasted = load_data()
         forecasted['Material No'] = forecasted['Material No'].astype(str)
-
-        def makedaywiseForecast(df_yearly,mat,oem,end_date=date.today()+timedelta(days=365*5),initial_stock=10):
-            daywiseForecast = pd.DataFrame(columns=['Material No','Desc','leadtime','date','daily_cons','anticipated_consum','buffer_stock','present_stock','stock_after'])
-            df=df_yearly.copy()
-            df=df[(df['Material No']==mat)&(df['oem']==oem)].reset_index(drop=True)
-            consider_pre_order = False
-            start_date = date.today()
-            days = (end_date-start_date).days
-            initial_stock = df.at[0,'cons_wip']*2
-            daywiseForecast.at[0,'present_stock'] = initial_stock if df.at[0,'buffer_stock'] < initial_stock else df.at[0,'buffer_stock']*1.2
-            daywiseForecast.at[0,'stock_after']=daywiseForecast.at[0,'present_stock']
-            reorder_point=end_date+timedelta(days=2)
-            reorder_qty,updated_reorder_qty=0,0
-            first_reorder=False
-            leadtime = df['leadtime'].iloc[0]
-            arrival={}
-            for i in range(days):
-                daywiseForecast.at[i,'date']=start_date+timedelta(days=i)
-                daywiseForecast.at[i,'anticipated_consum']=df.loc[df['year']==date.today().year,'cons_woip'].iloc[0]*leadtime/365
-                daywiseForecast.at[i,'buffer_stock']=df.loc[df['year']==date.today().year,'buffer_stock'].iloc[0]
-                daywiseForecast.at[i,'daily_cons']=df.loc[df['year']==date.today().year,'cons_wip'].iloc[0]/365
-                if i>0:
-                    if i in arrival.keys():
-                        arrived_qty = arrival[i]
-                    else:
-                        arrived_qty=0
-                    daywiseForecast.at[i,'present_stock']=max(daywiseForecast.at[i-1,'present_stock']-daywiseForecast.at[i-1,'daily_cons'],0)
-                    daywiseForecast.at[i,'stock_after']=max(daywiseForecast.at[i-1,'stock_after']-daywiseForecast.at[i-1,'daily_cons'],0)+arrived_qty
-                    if not first_reorder:
-                        if daywiseForecast.at[i,'present_stock']< daywiseForecast.at[i,'buffer_stock']:
-                            reorder_point = daywiseForecast.at[i,'date']
-                            first_reorder = True
-                            current_year=daywiseForecast.at[i,'date'].year
-                            reorder_qty = df.loc[df['year']==date.today().year,'cons_wip'].iloc[0] + daywiseForecast.at[i,'anticipated_consum'] +  daywiseForecast.at[i,'buffer_stock'] - daywiseForecast.at[i, 'present_stock']
-                            arrival[i+leadtime]=reorder_qty
-            daywiseForecast['Material No']=mat
-            daywiseForecast['Desc']=df.at[0,'Desc']
-            daywiseForecast['leadtime']=df['leadtime'].iloc[0]
-            date_for_stock_check = reorder_point+timedelta(days=(365+int(leadtime)))
-            if date_for_stock_check < end_date:
-                if daywiseForecast[daywiseForecast['date']==date_for_stock_check]['present_stock'].iloc[0] == 0:
-                    consider_pre_order = True
-                    updated_period = daywiseForecast[daywiseForecast['date'].between(date.today(),reorder_point)]
-                    updated_reorder_qty = reorder_qty - updated_period['daily_cons'].values.sum()
-            return daywiseForecast.reset_index(drop=True),{
-                'reorder_point':reorder_point,
-                'reorder_qty': np.ceil(reorder_qty),
-                'updated_reorder_qty':np.ceil(updated_reorder_qty),
-                'consider_pre_order':consider_pre_order,
-                'leadtime':leadtime
-            }
-
 
         # User inputs
         oem = "atlas"

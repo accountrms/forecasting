@@ -1,6 +1,5 @@
 import streamlit as st
 from dashboard import dashboard_page
-from data import load_main_data
 from material_search import material_search_page
 from notification import notification_page
 
