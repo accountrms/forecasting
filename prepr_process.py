@@ -18,12 +18,17 @@ def prepr_process_page(material_no=None):
         today = datetime.now().date().strftime("%d/%m/%Y")
         data = {
                 "Material No": [],
-                "Reorder Point": [],
-                "Reorder Qty": [],
-                "Updated Reorder Point":[],
-                "Updated Reorder Qty": [],
-                "Override Qty": [],
-                "Reason for Override": []
+                "Description": [],
+                'One off Requirement': [],
+                'Regular Requirement': [],
+                'Overhaul Qty': [],
+                'Anticipated Qty': [],
+                'Plant Stock': [],
+                'On order Stock': [],
+                'In process Stock': [],
+                'Net Requirement': [],
+                "Final Requirement": [],
+                "Justification for manual override": []
         }
 
 
@@ -37,27 +42,43 @@ def prepr_process_page(material_no=None):
         n = 100/rows
         i=1
         for index, row in all_material_nos.iterrows():
-            material_no = row['Material No'] 
+            material_no = row['Material No']
+            description = row['Desc']
 
             ordering_required = {}
             ordering_required[material_no]={}
             df, ordering_required[material_no] = makedaywiseForecast(forecasted_data, material_no, 'atlas')
+            df = df.fillna(0)
             leadtime = ordering_required[material_no]['leadtime']
             reorder_point = ordering_required[material_no]['reorder_point']
             reorder_qty = ordering_required[material_no]['reorder_qty']
+            one_off_requirement = round(df.iloc[0]["One-off_req"])
+            regular_requirement = round(df.iloc[0]["Regular_req"])
+            overhaul_quantity = 0
+            anticipated_qty = round(df.iloc[0]["anticipated_consum"])
+            plant_stock = 0
+            on_order_stock = round(df.iloc[0]["on_order_stock"])
+            in_process_stock = 0
+            net_requirement = one_off_requirement + regular_requirement + overhaul_quantity + anticipated_qty - (plant_stock + on_order_stock + in_process_stock)
             updated_reorder_qty = ordering_required[material_no]['updated_reorder_qty']
             st.session_state.override_quantities[material_no] = updated_reorder_qty
             st.session_state.override_reasons[material_no] = ""
+        
+            print(df)
 
-            # print(material_no, reorder_point, reorder_qty, updated_reorder_qty)
             new_row = {
                 "Material No": material_no,
-                "Reorder Point": reorder_point.strftime("%d/%m/%Y"),
-                "Reorder Qty": reorder_qty,
-                "Updated Reorder Point": today,
-                "Updated Reorder Qty": updated_reorder_qty,
-                "Override Qty": st.session_state.override_quantities[material_no],
-                "Reason for Override": st.session_state.override_reasons[material_no]
+                "Description": description,
+                'One off Requirement': one_off_requirement,
+                'Regular Requirement': regular_requirement,
+                'Overhaul Qty': overhaul_quantity,
+                'Anticipated Qty': anticipated_qty,
+                'Plant Stock': plant_stock,
+                'On order Stock': on_order_stock,
+                'In process Stock': in_process_stock,
+                'Net Requirement': net_requirement,
+                "Final Requirement": st.session_state.override_quantities[material_no],
+                "Justification for manual override": st.session_state.override_reasons[material_no]
             }
 
             for key in data:
@@ -75,10 +96,15 @@ def prepr_process_page(material_no=None):
                 df,
                     column_config={
                         "Material No": st.column_config.TextColumn(disabled=True),
-                        "Reorder Point": st.column_config.TextColumn(disabled=True),
-                        "Reorder Qty": st.column_config.TextColumn(disabled=True),
-                        "Updated Reorder Point": st.column_config.TextColumn(disabled=True),
-                        "Updated Reorder Qty": st.column_config.TextColumn(disabled=True)
+                        "Description": st.column_config.TextColumn(disabled=True),
+                        'One off Requirement': st.column_config.TextColumn(disabled=True),
+                        'Regular Requirement': st.column_config.TextColumn(disabled=True),
+                        'Overhaul Qty': st.column_config.TextColumn(disabled=True),
+                        'Anticipated Qty': st.column_config.TextColumn(disabled=True),
+                        'Plant Stock': st.column_config.TextColumn(disabled=True),
+                        'On order Stock': st.column_config.TextColumn(disabled=True),
+                        'In process Stock': st.column_config.TextColumn(disabled=True),
+                        'Net Requirement': st.column_config.TextColumn(disabled=True),
                     },
             )
 

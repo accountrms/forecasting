@@ -80,14 +80,14 @@ def load_reliability_data(material_id):
         return None
     
 def makedaywiseForecast(df_yearly,mat,oem,end_date=date.today()+timedelta(days=365*5),initial_stock=10):
-    daywiseForecast = pd.DataFrame(columns=['Material No','Desc','leadtime','date','daily_cons','anticipated_consum','buffer_stock','present_stock','stock_after'])
+    daywiseForecast = pd.DataFrame(columns=['Material No','Desc','leadtime','date','daily_cons','Regular_req', 'One-off_req','anticipated_consum','buffer_stock','on_order_stock','present_stock','stock_after'])
     df=df_yearly.copy()
     df=df[(df['Material No']==mat)&(df['oem']==oem)].reset_index(drop=True)
     consider_pre_order = False
     start_date = date.today()
     days = (end_date-start_date).days
-    initial_stock = df.at[0,'cons_wip']*2
-    daywiseForecast.at[0,'present_stock'] = initial_stock if df.at[0,'buffer_stock'] < initial_stock else df.at[0,'buffer_stock']*1.2
+    initial_stock = df.at[0,'forecasted_consum']*2
+    daywiseForecast.at[0,'present_stock'] = initial_stock if df.at[0,'buffer_stock'] < initial_stock else df.at[0,'buffer_stock']*1.4
     daywiseForecast.at[0,'stock_after']=daywiseForecast.at[0,'present_stock']
     reorder_point=end_date+timedelta(days=2)
     reorder_qty,updated_reorder_qty=0,0
@@ -96,9 +96,11 @@ def makedaywiseForecast(df_yearly,mat,oem,end_date=date.today()+timedelta(days=3
     arrival={}
     for i in range(days):
         daywiseForecast.at[i,'date']=start_date+timedelta(days=i)
-        daywiseForecast.at[i,'anticipated_consum']=df.loc[df['year']==date.today().year,'cons_woip'].iloc[0]*leadtime/365
+        daywiseForecast.at[i,'anticipated_consum']=df.loc[df['year']==date.today().year,'anticipated_consum'].iloc[0]
+        daywiseForecast.at[i,'Regular_req']=df.loc[df['year']==date.today().year,'Regular_req'].iloc[0]
+        daywiseForecast.at[i,'One-off_req']=df.loc[df['year']==date.today().year,'One-off_req'].iloc[0]
         daywiseForecast.at[i,'buffer_stock']=df.loc[df['year']==date.today().year,'buffer_stock'].iloc[0]
-        daywiseForecast.at[i,'daily_cons']=df.loc[df['year']==date.today().year,'cons_wip'].iloc[0]/365
+        daywiseForecast.at[i,'daily_cons']=df.loc[df['year']==date.today().year,'forecasted_consum'].iloc[0]/365
         if i>0:
             if i in arrival.keys():
                 arrived_qty = arrival[i]
@@ -111,7 +113,7 @@ def makedaywiseForecast(df_yearly,mat,oem,end_date=date.today()+timedelta(days=3
                     reorder_point = daywiseForecast.at[i,'date']
                     first_reorder = True
                     current_year=daywiseForecast.at[i,'date'].year
-                    reorder_qty = df.loc[df['year']==date.today().year,'cons_wip'].iloc[0] + daywiseForecast.at[i,'anticipated_consum'] +  daywiseForecast.at[i,'buffer_stock'] - daywiseForecast.at[i, 'present_stock']
+                    reorder_qty = daywiseForecast.at[i,'One-off_req']+ daywiseForecast.at[i,'Regular_req'] + daywiseForecast.at[i,'anticipated_consum'] +  daywiseForecast.at[i,'buffer_stock'] - daywiseForecast.at[i, 'present_stock']
                     arrival[i+leadtime]=reorder_qty
     daywiseForecast['Material No']=mat
     daywiseForecast['Desc']=df.at[0,'Desc']

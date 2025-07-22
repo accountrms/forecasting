@@ -42,32 +42,6 @@ def show_material_details(material_id, main_data):
         col2.metric("Manufacturer's Leadtime (PO to GR)", pogr_forecasted)
         col3.metric("Logistics Delay", grgi_forecasted)
         col4.metric("Total Leadtime", total_leadtime)
-        
-        # Prepare data for plotting
-        additional_data['year'] = additional_data['year'].astype(int)
-        additional_data = additional_data.sort_values('year')
-
-        additional_data=additional_data[['year','cons_wip', 'buffer_stock','net_req','present_stock']]
-
-        # # Create the plot
-        # st.subheader("Inventory Trends Over Time")
-        # df_long = additional_data.melt(id_vars=['year'],
-        #                                var_name='Metric',
-        #                                value_name='Quantity')
-
-        # fig = px.line(df_long,
-        #               x='year',
-        #               y='Quantity',
-        #               color='Metric',  # This tells Plotly to draw a separate line for each 'Metric'
-        #               markers=True,  # Show markers at each data point
-        #               labels={'year': 'Year', 'Quantity': 'Quantity'})  # Customize axis labels
-
-        # fig.update_layout(hovermode="x unified")  # Shows all series values when hovering over a specific year
-
-        # # Display the plot
-        # st.plotly_chart(fig, use_container_width=True)  # use_container_width makes it fill the Streamlit column
-
-        # st.divider()
 
         # Load data
         @st.cache_data
@@ -85,11 +59,21 @@ def show_material_details(material_id, main_data):
             ordering_required = {}
             ordering_required[material_id]={}
             df, ordering_required[material_id] = makedaywiseForecast(forecasted, material_id, 'atlas')
+            df = df.fillna(0)
             leadtime = ordering_required[material_id]['leadtime']
             reorder_point = ordering_required[material_id]['reorder_point']
             delivery_date = reorder_point + pd.DateOffset(days=leadtime)
-            present_stock = additional_data['present_stock'].iloc[0]
-            safety_stock = additional_data['buffer_stock'].iloc[0]
+            present_stock = round(df.iloc[0]["present_stock"])
+            safety_stock = round(df.iloc[0]["buffer_stock"])
+            one_off_requirement = round(df.iloc[0]["One-off_req"])
+            regular_requirement = round(df.iloc[0]["Regular_req"])
+            overhaul_quantity = 0
+            anticipated_qty = round(df.iloc[0]["anticipated_consum"])
+            plant_stock = 0
+            on_order_stock = round(df.iloc[0]["on_order_stock"])
+            in_process_stock = 0
+            net_requirement = one_off_requirement + regular_requirement + overhaul_quantity + anticipated_qty - (plant_stock + on_order_stock + in_process_stock)
+
             
             col1, col2, col3, col4, col5 = st.columns(5)
             col1.metric("Reorder Point", reorder_point.strftime('%d/%m/%y'))
@@ -97,6 +81,19 @@ def show_material_details(material_id, main_data):
             col3.metric("Delivery Date", delivery_date.strftime('%d/%m/%y'))
             col4.metric("Present Stock", present_stock)
             col5.metric("Safety Stock", safety_stock)
+
+            col1, col2, col3, col4 = st.columns(4)
+            col1.metric("One off requirement", one_off_requirement)
+            col2.metric("Regular requirement", regular_requirement)
+            col3.metric("Overhaul quantity", overhaul_quantity)
+            col4.metric("Anticipated Quantity", anticipated_qty)
+
+            col1, col2, col3, col4 = st.columns(4)
+            col1.metric("Plant Stock", plant_stock)
+            col2.metric("On order Stock", on_order_stock)
+            col3.metric("In process Stock", in_process_stock)
+            col4.metric("Net Rquirement", net_requirement)
+
 
             # Plot
             df['date'] = pd.to_datetime(df['date'])
