@@ -7,7 +7,10 @@ def notification_page():
     if st.session_state.get('show_dashboard'):
         # Add a back button in the dashboard
         if st.button("← Back to Notifications"):
+            # Reset the dashboard state
             st.session_state['show_dashboard'] = False
+            st.session_state['selected_material_no'] = None
+            st.session_state['data_loaded'] = False
             st.rerun()
         # Pass the selected material number to the prepr_process_page
         prepr_process_page(st.session_state.get('selected_material_no'))
@@ -18,8 +21,8 @@ def notification_page():
     # Sample data
     stock_data = pd.DataFrame({
         "Date": ["20-07-2025 00:23", "21-07-2025 10:15", "22-07-2025 14:30"],
-        "Material No": ["220003196", "220003197", "220003198"],
-        "Present Stock": [30, 120, 55],
+        "Material No": ["220003196", "220026696", "220003198"],
+        "Present Stock": [30, 80, 55],
         "Safety Stock": [39, 100, 50]
     })
 
@@ -35,14 +38,3 @@ def notification_page():
                     st.session_state['selected_material_no'] = notification['Material No']
                     st.session_state['show_dashboard'] = True
                     st.rerun()
-
-def main():
-    if 'show_dashboard' not in st.session_state:
-        st.session_state['show_dashboard'] = False
-    if 'selected_material_no' not in st.session_state:
-        st.session_state['selected_material_no'] = None
-    
-    notification_page()
-
-if __name__ == "__main__":
-    main()

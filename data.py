@@ -90,6 +90,7 @@ def makedaywiseForecast(df_yearly,mat,oem,end_date=date.today()+timedelta(days=3
     daywiseForecast.at[0,'present_stock'] = initial_stock if df.at[0,'buffer_stock'] < initial_stock else df.at[0,'buffer_stock']*1.4
     daywiseForecast.at[0,'stock_after']=daywiseForecast.at[0,'present_stock']
     reorder_point=end_date+timedelta(days=2)
+    reorder_index,present_stock_correction=days-1,0
     reorder_qty,updated_reorder_qty=0,0
     first_reorder=False
     leadtime = df['leadtime'].iloc[0]
@@ -111,6 +112,7 @@ def makedaywiseForecast(df_yearly,mat,oem,end_date=date.today()+timedelta(days=3
             if not first_reorder:
                 if daywiseForecast.at[i,'present_stock']< daywiseForecast.at[i,'buffer_stock']:
                     reorder_point = daywiseForecast.at[i,'date']
+                    reorder_index=i
                     first_reorder = True
                     current_year=daywiseForecast.at[i,'date'].year
                     reorder_qty = daywiseForecast.at[i,'One-off_req']+ daywiseForecast.at[i,'Regular_req'] + daywiseForecast.at[i,'anticipated_consum'] +  daywiseForecast.at[i,'buffer_stock'] - daywiseForecast.at[i, 'present_stock']
@@ -122,12 +124,17 @@ def makedaywiseForecast(df_yearly,mat,oem,end_date=date.today()+timedelta(days=3
     if date_for_stock_check < end_date:
         if daywiseForecast[daywiseForecast['date']==date_for_stock_check]['present_stock'].iloc[0] == 0:
             consider_pre_order = True
-            updated_period = daywiseForecast[daywiseForecast['date'].between(date.today(),reorder_point)]
-            updated_reorder_qty = reorder_qty - updated_period['daily_cons'].values.sum()
-    return daywiseForecast.reset_index(drop=True),{
-        'reorder_point':reorder_point,
-        'reorder_qty': np.ceil(reorder_qty),
-        'updated_reorder_qty':np.ceil(updated_reorder_qty),
-        'consider_pre_order':consider_pre_order,
-        'leadtime':leadtime
-    }
+            present_stock_correction = daywiseForecast[daywiseForecast['date'].between(date.today(),reorder_point)]['daily_cons'].values.sum()
+            updated_reorder_qty = reorder_qty - present_stock_correction
+    result = {'reorder_point':reorder_point,
+              'reorder_qty': np.ceil(reorder_qty),
+              'updated_reorder_qty':np.ceil(updated_reorder_qty),
+              'consider_pre_order':consider_pre_order,
+              'One-off_req':np.ceil(daywiseForecast.at[reorder_index,'One-off_req']),
+              'Regular_req':np.ceil(daywiseForecast.at[reorder_index,'Regular_req']),
+              'anticipated_consum':np.ceil(daywiseForecast.at[reorder_index,'anticipated_consum']),
+              'buffer_stock':np.ceil(daywiseForecast.at[reorder_index,'buffer_stock']),
+              'present_stock':np.ceil(daywiseForecast.at[reorder_index, 'present_stock']+present_stock_correction),
+              'leadtime': leadtime
+             }
+    return daywiseForecast.reset_index(drop=True), result

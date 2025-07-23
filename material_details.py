@@ -56,28 +56,26 @@ def show_material_details(material_id, main_data):
 
         # Run forecast
         try:
-            ordering_required = {}
-            ordering_required[material_id]={}
-            df, ordering_required[material_id] = makedaywiseForecast(forecasted, material_id, 'atlas')
+            df, result = makedaywiseForecast(forecasted, material_id, 'atlas')
             df = df.fillna(0)
-            leadtime = ordering_required[material_id]['leadtime']
-            reorder_point = ordering_required[material_id]['reorder_point']
+            leadtime = result['leadtime']
+            reorder_point = result['reorder_point']
             delivery_date = reorder_point + pd.DateOffset(days=leadtime)
-            present_stock = round(df.iloc[0]["present_stock"])
-            safety_stock = round(df.iloc[0]["buffer_stock"])
-            one_off_requirement = round(df.iloc[0]["One-off_req"])
-            regular_requirement = round(df.iloc[0]["Regular_req"])
+            present_stock = result["present_stock"]
+            safety_stock = result["buffer_stock"]
+            one_off_requirement = result["One-off_req"]
+            regular_requirement = result["Regular_req"]
             overhaul_quantity = 0
-            anticipated_qty = round(df.iloc[0]["anticipated_consum"])
+            anticipated_qty = result["anticipated_consum"]
             plant_stock = 0
-            on_order_stock = round(df.iloc[0]["on_order_stock"])
+            on_order_stock = df.iloc[0]["on_order_stock"]
             in_process_stock = 0
-            net_requirement = one_off_requirement + regular_requirement + overhaul_quantity + anticipated_qty - (plant_stock + on_order_stock + in_process_stock)
+            net_requirement = result["reorder_qty"]
 
             
             col1, col2, col3, col4, col5 = st.columns(5)
             col1.metric("Reorder Point", reorder_point.strftime('%d/%m/%y'))
-            col2.metric("Reorder Quantity", ordering_required[material_id]['reorder_qty'])
+            col2.metric("Reorder Quantity", result['reorder_qty'])
             col3.metric("Delivery Date", delivery_date.strftime('%d/%m/%y'))
             col4.metric("Present Stock", present_stock)
             col5.metric("Safety Stock", safety_stock)
