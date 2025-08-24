@@ -161,7 +161,7 @@ def prepr_process_page(material_no=None):
             st.dataframe(st.session_state.data)
             
             # Add a submit button to update tracking.csv
-            if st.button("Submit Requirements"):
+            if st.button("Submit"):
                 try:
                     # Load existing tracking data or create new if it doesn't exist
                     try:
@@ -189,7 +189,7 @@ def prepr_process_page(material_no=None):
                     
                     # Save the updated tracking dataframe
                     tracking_df.to_csv("files/tracking.csv", index=False)
-                    st.success("Requirements submitted successfully! You can track the status on REQ Tracking")
+                    st.success("Requirement submitted successfully! You can track the status on REQ Tracking")
                     
                 except Exception as e:
                     st.error(f"Error updating tracking file: {str(e)}")
