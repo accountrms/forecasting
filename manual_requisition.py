@@ -22,7 +22,7 @@ def manual_requisition():
     stock_data = pd.DataFrame({
         "Date": ["20-07-2025 00:23", "21-07-2025 10:15", "22-07-2025 14:30"],
         "Material No": ["220003196", "220026696", "220003198"],
-        "Present Stock": [30, 80, 55],
+        "Present Stock": [40, 80, 55],
         "Safety Stock": [39, 100, 50],
         "Type": ['notify', 'manual', 'manual']
     })
@@ -43,13 +43,12 @@ def manual_requisition():
             else:
                 oem_options = [
                     "Select an OEM",
-                    "Dell Technologies",
-                    "HP Inc.",
-                    "Lenovo Group",
-                    "Cisco Systems",
-                    "Juniper Networks"
+                    "ATLAS COPCO (INDIA) LTD",
+                    "KSB LIMITED",
+                    "NATIONAL OILWELL VARCO",
+                    "TOGNUM  ASIA PTE..LTD."
+                    "VARCO B.J OIL TOOLS LTD.",
                 ]
-                st.subheader(" Manual Trigger")
                 col1, col2 = st.columns([4, 1])
                 with col1:
                     # Create the dropdown

@@ -36,9 +36,6 @@ st.markdown("""
     .sidebar .sidebar-content {
         padding-top: 2rem;
     }
-    .stSelectbox {
-        margin-top: -10px;
-    }
 </style>
 """, unsafe_allow_html=True)
 
