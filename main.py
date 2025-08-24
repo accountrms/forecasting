@@ -2,6 +2,8 @@ import streamlit as st
 from dashboard import dashboard_page
 from material_search import material_search_page
 from notification import notification_page
+from tracking import tracking_page
+from technical_analysis import tech_analysis
 
 # Page configuration
 st.set_page_config(page_title="Material Management", page_icon="🏭", layout="wide")
@@ -37,7 +39,7 @@ st.markdown("""
 def main():
     # Initialize session state for page navigation
     if 'current_page' not in st.session_state:
-        st.session_state.current_page = "Material Search"
+        st.session_state.current_page = "MAT Analysis"
     
     # Sidebar navigation
     with st.sidebar:
@@ -47,24 +49,36 @@ def main():
             st.session_state.current_page = "Dashboard"
             st.rerun()
 
-        if st.button("🔍 Material Search"):
-            st.session_state.current_page = "Material Search"
+        if st.button("🔍 MAT Analysis"):
+            st.session_state.current_page = "MAT Analysis"
             st.session_state.show_details = False
             st.rerun()
 
         if st.button("📊 Notification"):
             st.session_state.current_page = "Notification"
             st.rerun()
-        
+
+        if st.button("📊 REQ Tracking"):
+            st.session_state.current_page = "REQ Tracking"
+            st.rerun()
+
+        if st.button("📊 Technical Analysis"):
+            st.session_state.current_page = "Technical Analysis"
+            st.rerun()
+
         st.markdown("---")
     
     # Page routing
     if st.session_state.current_page == "Dashboard":
         dashboard_page()
-    elif st.session_state.current_page == "Material Search":
+    elif st.session_state.current_page == "MAT Analysis":
         material_search_page()
     elif st.session_state.current_page == "Notification":
         notification_page()
+    elif st.session_state.current_page == "REQ Tracking":
+        tracking_page()
+    elif st.session_state.current_page == "Technical Analysis":
+        tech_analysis()
 
 if __name__ == "__main__":
     main()

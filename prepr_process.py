@@ -159,6 +159,40 @@ def prepr_process_page(material_no=None):
         if st.session_state.show_data:
             st.write("Current Requirements:")
             st.dataframe(st.session_state.data)
+            
+            # Add a submit button to update tracking.csv
+            if st.button("Submit Requirements"):
+                try:
+                    # Load existing tracking data or create new if it doesn't exist
+                    try:
+                        tracking_df = pd.read_csv("files/tracking.csv")
+                    except FileNotFoundError:
+                        tracking_df = pd.DataFrame(columns=[
+                            "Timestamp", "User", "Material No", "VED", 
+                            "Final Requirement", "Justification"
+                        ])
+                    
+                    # Get current user (you might want to replace this with actual user authentication)
+                    user = "Current User"  # Replace with actual user identification
+                    
+                    # Add new entries to tracking dataframe
+                    for index, row in st.session_state.data.iterrows():
+                        new_entry = {
+                            "Timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                            "User": user,
+                            "Material No": row["Material No"],
+                            "VED": row["VED"],
+                            "Final Requirement": row["Final Requirement (override)"],
+                            "Justification": row["Justification for manual override"]
+                        }
+                        tracking_df = pd.concat([tracking_df, pd.DataFrame([new_entry])], ignore_index=True)
+                    
+                    # Save the updated tracking dataframe
+                    tracking_df.to_csv("files/tracking.csv", index=False)
+                    st.success("Requirements submitted successfully! Tracking updated.")
+                    
+                except Exception as e:
+                    st.error(f"Error updating tracking file: {str(e)}")
 
     else:
         st.warning("No material selected")
