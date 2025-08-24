@@ -11,6 +11,8 @@ st.set_page_config(page_title="Material Management", page_icon="🏭", layout="w
 # Custom CSS for better appearance
 st.markdown("""
 <style>
+    unsafe_allow_html=True
+)
     .stTextInput input {
         font-size: 16px;
     }
@@ -41,7 +43,14 @@ def main():
     # Initialize session state for page navigation
     if 'current_page' not in st.session_state:
         st.session_state.current_page = "MAT Analysis"
-    
+    st.sidebar.markdown(
+        """
+        <div style="display: flex; justify-content: center; align-items: center; padding: 20px 0;">
+            <img src="https://udbhav.ongc.co.in/images/logo.png" width="150">
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
     # Sidebar navigation
     with st.sidebar:
         st.title("InvOptima")
