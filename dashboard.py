@@ -22,7 +22,7 @@ def format_indian_units(number):
 # Dashboard Page (unchanged from your original)
 def dashboard_page():
     st.subheader("📊 Dashboard - SHP Platform (11F2) :: Plant Inventory Monitoring")
-    st.text("")
+    st.divider()
     k1, k2, k3 = st.columns([2, 1, 1])
     with k1:
         st.text("Total Purchase Done (Quarter-wise)")

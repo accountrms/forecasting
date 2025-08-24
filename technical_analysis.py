@@ -109,7 +109,7 @@ def tech_analysis():
     f = pd.read_csv("files/forecastedModels.csv")
     cons = pd.read_csv("files/cons.csv")
 
-    st.title("🏭 Technical Analysis")
+    st.subheader("🏭 Technical Analysis")
     st.divider()
     search_term = st.text_input("Analyse by Material No")
     if search_term:

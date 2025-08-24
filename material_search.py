@@ -15,7 +15,7 @@ def material_search_page():
             show_material_details(st.session_state.selected_material, data)
         return
 
-    st.title("🏭 Demand Forecast")
+    st.subheader("🏭 Demand Forecast")
     
     data = load_main_data()
     

@@ -4,7 +4,7 @@ from data import makedaywiseForecast
 from datetime import datetime
 
 def prepr_process_page(material_no=None):
-    st.title("Material Requisition Process")
+    st.subheader("Material Requisition Process")
     
     if material_no:
         # Initialize session state variables if they don't exist

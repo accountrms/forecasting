@@ -16,7 +16,7 @@ def notification_page():
         prepr_process_page(st.session_state.get('selected_material_no'))
         return  # This exits the function early, showing only the dashboard
 
-    st.title("📊 Notifications")
+    st.subheader("📊 Notifications")
 
     # Sample data
     stock_data = pd.DataFrame({
