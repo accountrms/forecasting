@@ -4,7 +4,7 @@ from data import makedaywiseForecast
 from datetime import datetime
 
 def prepr_process_page(material_no=None):
-    st.title("Pre PR Process")
+    st.title("Material Requisition Process")
     
     if material_no:
         # Initialize session state variables if they don't exist
@@ -189,7 +189,7 @@ def prepr_process_page(material_no=None):
                     
                     # Save the updated tracking dataframe
                     tracking_df.to_csv("files/tracking.csv", index=False)
-                    st.success("Requirements submitted successfully! Tracking updated.")
+                    st.success("Requirements submitted successfully! You can track the status on REQ Tracking")
                     
                 except Exception as e:
                     st.error(f"Error updating tracking file: {str(e)}")

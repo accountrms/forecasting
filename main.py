@@ -21,9 +21,10 @@ st.markdown("""
         font-size: 16px;
     }
     .stButton button {
-        background-color: #4CAF50;
+        background-color: #0a1172;
         color: white;
         font-weight: bold;
+        width: 180px;
     }
     /* Sidebar styling */
     [data-testid="stSidebar"] {
