@@ -6,7 +6,7 @@ def notification_page():
     # Check if we should show dashboard instead
     if st.session_state.get('show_dashboard'):
         # Add a back button in the dashboard
-        if st.button("← Back to Notifications"):
+        if st.button("← Back"):
             # Reset the dashboard state
             st.session_state['show_dashboard'] = False
             st.session_state['selected_material_no'] = None

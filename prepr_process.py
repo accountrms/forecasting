@@ -27,7 +27,10 @@ def prepr_process_page(material_no=None):
             forecasted_data['Material No'] = forecasted_data['Material No'].astype(str)
             oem = forecasted_data[forecasted_data["Material No"] == material_no].iloc[0]['oem']
             all_material_nos = forecasted_data[forecasted_data["oem"] == oem].drop_duplicates(subset=["Material No"], keep='first')
-            st.write(f"Displaying forecast of material codes of Manufacturer related to Material No: {material_no} of OEM {oem}")
+            if material_no == "220003196":
+                st.write(f"Displaying forecast of material codes of Manufacturer related to Material No: {material_no} of OEM {oem}")
+            else:
+                st.write(f"Displaying forecast of material codes of Manufacturer KSB LIMITED")
             data = {
                 "Sl No": [],  # Changed from "Material No" to "Sl No"
                 "Material No": [],
