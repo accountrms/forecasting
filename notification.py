@@ -23,44 +23,18 @@ def notification_page():
         "Date": ["20-07-2025 00:23", "21-07-2025 10:15", "22-07-2025 14:30"],
         "Material No": ["220003196", "220026696", "220003198"],
         "Present Stock": [30, 80, 55],
-        "Safety Stock": [39, 100, 50],
-        "Type": ['notify', 'manual', 'manual']
+        "Safety Stock": [39, 100, 50]
     })
 
     # Iterate through notifications
     for index, notification in stock_data.iterrows():
         if notification['Present Stock'] < notification['Safety Stock']:
-            if notification['Type'] == 'notify':
-                col1, col2 = st.columns([4, 1])
-                with col1:
-                    st.error(f"⚠️ [{notification['Date']}] Stock below Safety level - **Material No:** {notification['Material No']}")
-                with col2:
-                    if st.button("Create Requisition", key=f"btn_{notification['Material No']}"):
-                        # Store the selected material number and show dashboard
-                        st.session_state['selected_material_no'] = notification['Material No']
-                        st.session_state['show_dashboard'] = True
-                        st.rerun()
-            else:
-                oem_options = [
-                    "Select an OEM",
-                    "Dell Technologies",
-                    "HP Inc.",
-                    "Lenovo Group",
-                    "Cisco Systems",
-                    "Juniper Networks"
-                ]
-                st.subheader(" Manual Trigger")
-                col1, col2 = st.columns([4, 1])
-                with col1:
-                    # Create the dropdown
-                    selected_oem = st.selectbox(
-                        "",
-                        options=oem_options,
-                        index=0  # Default to "Select an OEM"
-                    )
-                with col2:
-                    if st.button("Create Requisition", key=f"btn_{notification['Material No']}"):
-                        # Store the selected material number and show dashboard
-                        st.session_state['selected_material_no'] = notification['Material No']
-                        st.session_state['show_dashboard'] = True
-                        st.rerun()
+            col1, col2 = st.columns([4, 1])
+            with col1:
+                st.error(f"⚠️ [{notification['Date']}] Stock below Safety level - **Material No:** {notification['Material No']}")
+            with col2:
+                if st.button("Create Requisition", key=f"btn_{notification['Material No']}"):
+                    # Store the selected material number and show dashboard
+                    st.session_state['selected_material_no'] = notification['Material No']
+                    st.session_state['show_dashboard'] = True
+                    st.rerun()
