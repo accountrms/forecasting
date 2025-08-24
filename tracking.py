@@ -3,7 +3,7 @@ import streamlit as st
 import pandas as pd
 
 def tracking_page():
-    st.subheader("Request Tracking")
+    st.subheader("📡Request Tracking")
     st.markdown("Track the status of your material purchase requests")
     
     # Display the tracking table

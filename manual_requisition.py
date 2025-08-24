@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 from prepr_process import prepr_process_page
 
-def notification_page():
+def manual_requisition():
     # Check if we should show dashboard instead
     if st.session_state.get('show_dashboard'):
         # Add a back button in the dashboard
@@ -16,7 +16,7 @@ def notification_page():
         prepr_process_page(st.session_state.get('selected_material_no'))
         return  # This exits the function early, showing only the dashboard
 
-    st.subheader("📝 Notifications")
+    st.subheader("✅ Manual Requisition")
 
     # Sample data
     stock_data = pd.DataFrame({

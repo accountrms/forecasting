@@ -4,6 +4,7 @@ from material_search import material_search_page
 from notification import notification_page
 from tracking import tracking_page
 from technical_analysis import tech_analysis
+from manual_requisition import manual_requisition
 
 # Page configuration
 st.set_page_config(page_title="Material Management", page_icon="🏭", layout="wide")
@@ -35,6 +36,9 @@ st.markdown("""
     .sidebar .sidebar-content {
         padding-top: 2rem;
     }
+    .stSelectbox {
+        margin-top: -10px;
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -64,15 +68,19 @@ def main():
             st.session_state.show_details = False
             st.rerun()
 
-        if st.button("📊 Notification"):
+        if st.button("📝 Notification"):
             st.session_state.current_page = "Notification"
             st.rerun()
 
-        if st.button("📊 REQ Tracking"):
+        if st.button("✅ Manual Requisition"):
+            st.session_state.current_page = "Manual Requisition"
+            st.rerun()
+
+        if st.button("📡 REQ Tracking"):
             st.session_state.current_page = "REQ Tracking"
             st.rerun()
 
-        if st.button("📊 Technical Analysis"):
+        if st.button("🏭 Technical Analysis"):
             st.session_state.current_page = "Technical Analysis"
             st.rerun()
 
@@ -89,6 +97,8 @@ def main():
         tracking_page()
     elif st.session_state.current_page == "Technical Analysis":
         tech_analysis()
+    elif st.session_state.current_page == "Manual Requisition":
+        manual_requisition()
 
 if __name__ == "__main__":
     main()
